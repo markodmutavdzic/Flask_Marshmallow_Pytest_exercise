@@ -17,10 +17,10 @@ class CreateNoteInput(Schema):
     user_id = fields.Int(required=True, validate=Range(min=0))
 
     @validates('note')
-    def contains_forbidden_word(self, value):
+    def contains_forbidden_word(self, text):
         forbidden_words = ['unbelievable', 'impossible', 'undoable', 'can not', 'would not']
         for word in forbidden_words:
-            if word in value:
+            if word in text.lower():
                 raise ValidationError("Note contains forbidden word")
 
 
@@ -32,10 +32,10 @@ class UpdateNoteInput(Schema):
     time_updated = fields.Str(required=False)
 
     @validates('note')
-    def contains_forbidden_word(self, value):
+    def contains_forbidden_word(self, text):
         forbidden_words = ['unbelievable', 'impossible', 'undoable', 'can not', 'would not']
         for word in forbidden_words:
-            if word in value:
+            if word in text.lower():
                 raise ValidationError("Note contains forbidden word")
 
 
