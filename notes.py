@@ -50,9 +50,7 @@ def create_note():
         abort(BAD_REQUEST, str(errors))
     current_time = datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S")
     time_created = {"time_created": current_time}
-    request_note = request.get_json()
-    request_note.update(time_created)
-    note = {uuid.uuid4().int: request_note}
+    note = {str(uuid.uuid4()): {**request.get_json(), **time_created}}
     notes.update(note)
     return note
 
@@ -62,29 +60,34 @@ def get_notes():
     return notes
 
 
-@app.route('/api/note/<int:uid>')
+@app.route('/api/note/<string:uid>')
 def get_note(uid):
-    note = notes[uid]
+    note = notes.get(uid)
+    if not note:
+        return abort(BAD_REQUEST, "Note does not exist")
     return note
 
 
-@app.route('/api/note/<int:uid>', methods=['PATCH'])
+@app.route('/api/note/<string:uid>', methods=['PATCH'])
 def update_note(uid):
     errors = update_note_schema.validate(request.get_json())
     if errors:
         abort(BAD_REQUEST, str(errors))
-    request_update = request.get_json()
-    notes[uid].update(request_update)
-    note = notes[uid]
+    note = notes.get(uid)
+    if not note:
+        return abort(BAD_REQUEST, "Note does not exist")
     current_time = datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S")
     time_updated = {"time_updated": current_time}
-    note.update(time_updated)
+    note.update(**request.get_json(), **time_updated)
     return note
 
 
-@app.route('/api/note/<int:uid>', methods=['DELETE'])
+@app.route('/api/note/<string:uid>', methods=['DELETE'])
 def delete_note(uid):
-    note = notes.pop(uid)
+    note = notes.get(uid)
+    if not note:
+        return abort(BAD_REQUEST, "Note does not exist")
+    notes.pop(uid)
     return note
 
 
