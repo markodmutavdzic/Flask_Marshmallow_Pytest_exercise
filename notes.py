@@ -91,4 +91,4 @@ def delete_note(uid):
     return note
 
 
-app.run(debug=True)
+app.run()
