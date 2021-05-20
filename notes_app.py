@@ -1,10 +1,10 @@
 import datetime
 import uuid
 from http.client import BAD_REQUEST
+
 from marshmallow import Schema, fields, validates, ValidationError
 from flask import Flask, request
 from marshmallow.validate import Length, Range
-from werkzeug.exceptions import abort
 
 app = Flask(__name__)
 
@@ -45,12 +45,14 @@ update_note_schema = UpdateNoteInput()
 
 @app.route('/api/note', methods=['POST'])
 def create_note():
-    errors = create_note_schema.validate(request.get_json())
-    if errors:
-        abort(BAD_REQUEST, str(errors))
+    try:
+        input_data = create_note_schema.load(request.get_json())
+    except ValidationError as err:
+        return err.messages, BAD_REQUEST
+
     current_time = datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S")
     time_created = {"time_created": current_time}
-    note = {str(uuid.uuid4()): {**request.get_json(), **time_created}}
+    note = {str(uuid.uuid4()): {**input_data, **time_created}}
     notes.update(note)
     return note
 
@@ -64,21 +66,25 @@ def get_notes():
 def get_note(uid):
     note = notes.get(uid)
     if not note:
-        return abort(BAD_REQUEST, "Note does not exist")
+        return 'Note does not exist', BAD_REQUEST
     return note
 
 
 @app.route('/api/note/<string:uid>', methods=['PATCH'])
 def update_note(uid):
-    errors = update_note_schema.validate(request.get_json())
-    if errors:
-        abort(BAD_REQUEST, str(errors))
+
+    try:
+        input_data = update_note_schema.load(request.get_json())
+    except ValidationError as err:
+        return err.messages, BAD_REQUEST
+
     note = notes.get(uid)
     if not note:
-        return abort(BAD_REQUEST, "Note does not exist")
+        return "Note does not exist", BAD_REQUEST
+
     current_time = datetime.datetime.now().strftime("%d-%m-%Y %H:%M:%S")
     time_updated = {"time_updated": current_time}
-    note.update(**request.get_json(), **time_updated)
+    note.update(**input_data, **time_updated)
     return note
 
 
@@ -86,7 +92,7 @@ def update_note(uid):
 def delete_note(uid):
     note = notes.get(uid)
     if not note:
-        return abort(BAD_REQUEST, "Note does not exist")
+        return "Note does not exist", BAD_REQUEST
     notes.pop(uid)
     return note
 
